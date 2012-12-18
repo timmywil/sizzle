@@ -25,6 +25,8 @@ var i,
 	matches,
 	contains,
 	sortOrder,
+	firstChild,
+	nextSibling,
 
 	expando = "sizzle" + -(new Date()),
 
@@ -374,6 +376,12 @@ setDocument = Sizzle.setDocument = function( doc ) {
 
 		return pass;
 	});
+
+	// Fast element traversal properties
+	support.traversal = typeof docElem.firstElementChild !== strundefined ? "Element" : "";
+	nextSibling = "next" + support.traversal + "Sibling";
+	firstChild = "first" + support.traversal + "Child";
+	Expr.relative["+"].dir = Expr.relative["~"].dir = "previous" + support.traversal + "Sibling";
 
 	// IE6/7 return modified attributes
 	Expr.attrHandle = assert(function( div ) {
@@ -749,9 +757,9 @@ Sizzle.uniqueSort = function( results ) {
 };
 
 function siblingCheck( a, b ) {
-	var cur = a && b && a.nextSibling;
+	var cur = a && b && a[ nextSibling ];
 
-	for ( ; cur; cur = cur.nextSibling ) {
+	for ( ; cur; cur = cur[ nextSibling ] ) {
 		if ( cur === b ) {
 			return -1;
 		}
@@ -818,7 +826,7 @@ getText = Sizzle.getText = function( elem ) {
 			return elem.textContent;
 		} else {
 			// Traverse its children
-			for ( elem = elem.firstChild; elem; elem = elem.nextSibling ) {
+			for ( elem = elem[ firstChild ]; elem; elem = elem[ nextSibling ] ) {
 				ret += getText( elem );
 			}
 		}
@@ -844,8 +852,8 @@ Expr = Sizzle.selectors = {
 	relative: {
 		">": { dir: "parentNode", first: true },
 		" ": { dir: "parentNode" },
-		"+": { dir: "previousSibling", first: true },
-		"~": { dir: "previousSibling" }
+		"+": { first: true },
+		"~": {}
 	},
 
 	preFilter: {
@@ -984,6 +992,7 @@ Expr = Sizzle.selectors = {
 
 				function( elem, context, xml ) {
 					var cache, outerCache, node, diff, nodeIndex, start,
+						// Can't use fast traversal here
 						dir = simple !== forward ? "nextSibling" : "previousSibling",
 						parent = elem.parentNode,
 						name = ofType && elem.nodeName.toLowerCase(),
@@ -1209,8 +1218,9 @@ Expr = Sizzle.selectors = {
 			// http://www.w3.org/TR/selectors/#empty-pseudo
 			// :empty is only affected by element nodes and content nodes(including text(3), cdata(4)),
 			//   not comment, processing instructions, or others
-			// Thanks to Diego Perini for the nodeName shortcut
+			// Thanks to NWMatcher and Slick for the nodeName shortcut
 			//   Greater than "@" means alpha characters (specifically not starting with "#" or "?")
+			// Do not use fast traversal properties here
 			for ( elem = elem.firstChild; elem; elem = elem.nextSibling ) {
 				if ( elem.nodeName > "@" || elem.nodeType === 3 || elem.nodeType === 4 ) {
 					return false;
